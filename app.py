@@ -199,7 +199,7 @@ def prestamo_nuevo():
             db.session.rollback()
             flash(f'Error al crear préstamo: {str(e)}', 'error')
     
-    return render_template('prestamos.html', clientes=clientes, modo='crear')
+    return render_template('prestamos.html', clientes=clientes, modo='crear', fecha_hoy=date.today().strftime('%Y-%m-%d'))
 
 
 @app.route('/prestamos/<int:id>')
