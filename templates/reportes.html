@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Reportes - Sistema de Gestión de Préstamos{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="bi bi-file-earmark-text"></i> Reportes de Préstamos</h1>
+    <p class="text-muted">Listado completo de préstamos del sistema</p>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <i class="bi bi-table"></i> Listado de Préstamos
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Cliente</th>
+                        <th>Documento</th>
+                        <th>Monto</th>
+                        <th>Tasa Interés</th>
+                        <th>Cuotas</th>
+                        <th>Fecha Desembolso</th>
+                        <th>Estado</th>
+                        <th>Fecha Creación</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if prestamos %}
+                        {% for prestamo in prestamos %}
+                        <tr>
+                            <td>{{ prestamo.id }}</td>
+                            <td>{{ prestamo.cliente.nombre if prestamo.cliente else 'N/A' }} {{ prestamo.cliente.apellido if prestamo.cliente else '' }}</td>
+                            <td>{{ prestamo.cliente.documento if prestamo.cliente else 'N/A' }}</td>
+                            <td>₲ {{ "{:,.0f}".format(prestamo.monto).replace(',', '.') }}</td>
+                            <td>{{ prestamo.tasa_interes }}%</td>
+                            <td>{{ prestamo.cantidad_cuotas }}</td>
+                            <td>{{ prestamo.fecha_desembolso.strftime('%Y-%m-%d') if prestamo.fecha_desembolso else 'N/A' }}</td>
+                            <td>
+                                <span class="badge {% if prestamo.estado == 'ACTIVO' %}bg-success{% else %}bg-danger{% endif %}">
+                                    {{ prestamo.estado }}
+                                </span>
+                            </td>
+                            <td>{{ prestamo.fecha_creacion.strftime('%Y-%m-%d') if prestamo.fecha_creacion else 'N/A' }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="9" class="text-center">
+                                <p class="text-muted">No hay préstamos registrados</p>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

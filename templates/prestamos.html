@@ -1,0 +1,283 @@
+{% extends "base.html" %}
+
+{% block title %}Gestión de Préstamos - Sistema de Gestión de Préstamos{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="bi bi-cash-coin"></i> Gestión de Préstamos</h1>
+    <p class="text-muted">Administrar préstamos del sistema</p>
+</div>
+
+{% if modo == 'crear' %}
+<!-- Formulario de Nuevo Préstamo -->
+<div class="card">
+    <div class="card-header">
+        <i class="bi bi-plus-circle"></i> Registrar Nuevo Préstamo
+    </div>
+    <div class="card-body">
+        <form action="{{ url_for('prestamo_nuevo') }}" method="POST" id="prestamoForm">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="cliente_id" class="form-label">Cliente *</label>
+                        <select class="form-select" id="cliente_id" name="cliente_id" required>
+                            <option value="">Seleccione un cliente</option>
+                            {% for cliente in clientes %}
+                            <option value="{{ cliente.id }}">{{ cliente.nombre }} {{ cliente.apellido }} - {{ cliente.documento }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="monto" class="form-label">Monto Solicitado (₲) *</label>
+                        <input type="text" class="form-control" id="monto" name="monto" placeholder="150.000" required>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="tasa_interes" class="form-label">Tasa de Interés Anual (%) *</label>
+                        <input type="number" class="form-control" id="tasa_interes" name="tasa_interes" step="0.01" min="0" required oninput="calcularCuota()">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="cantidad_cuotas" class="form-label">Cantidad de Cuotas *</label>
+                        <input type="number" class="form-control" id="cantidad_cuotas" name="cantidad_cuotas" min="1" required oninput="calcularCuota()">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="fecha_desembolso" class="form-label">Fecha de Desembolso *</label>
+                        <input type="date" class="form-control" id="fecha_desembolso" name="fecha_desembolso" value="{{ 'now' | date('%Y-%m-%d') }}" readonly>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="mb-3">
+                        <label class="form-label">Cuota Mensual Calculada</label>
+                        <input type="text" class="form-control" id="cuota_calculada" readonly>
+                    </div>
+                </div>
+            </div>
+            <div class="mb-3">
+                <a href="{{ url_for('prestamos') }}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Cancelar
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-save"></i> Guardar Préstamo
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% elif modo == 'editar' %}
+<!-- Formulario de Editar Préstamo -->
+<div class="card">
+    <div class="card-header">
+        <i class="bi bi-pencil-square"></i> Editar Préstamo
+    </div>
+    <div class="card-body">
+        <form action="{{ url_for('prestamo_editar', id=prestamo.id) }}" method="POST" id="prestamoForm">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="cliente_id" class="form-label">Cliente *</label>
+                        <select class="form-select" id="cliente_id" name="cliente_id" required>
+                            <option value="">Seleccione un cliente</option>
+                            {% for cliente in clientes %}
+                            <option value="{{ cliente.id }}" {% if cliente.id == prestamo.cliente_id %}selected{% endif %}>{{ cliente.nombre }} {{ cliente.apellido }} - {{ cliente.documento }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="monto" class="form-label">Monto Solicitado (₲) *</label>
+                        <input type="text" class="form-control" id="monto" name="monto" placeholder="150.000" value="{{ prestamo.monto }}" required>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="tasa_interes" class="form-label">Tasa de Interés Anual (%) *</label>
+                        <input type="number" class="form-control" id="tasa_interes" name="tasa_interes" step="0.01" min="0" value="{{ prestamo.tasa_interes }}" required oninput="calcularCuota()">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="cantidad_cuotas" class="form-label">Cantidad de Cuotas *</label>
+                        <input type="number" class="form-control" id="cantidad_cuotas" name="cantidad_cuotas" min="1" value="{{ prestamo.cantidad_cuotas }}" required oninput="calcularCuota()">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="fecha_desembolso" class="form-label">Fecha de Desembolso *</label>
+                        <input type="date" class="form-control" id="fecha_desembolso" name="fecha_desembolso" value="{{ prestamo.fecha_desembolso.strftime('%Y-%m-%d') if prestamo.fecha_desembolso else '' }}" readonly>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="mb-3">
+                        <label class="form-label">Cuota Mensual Calculada</label>
+                        <input type="text" class="form-control" id="cuota_calculada" readonly>
+                    </div>
+                </div>
+            </div>
+            <div class="alert alert-warning">
+                <i class="bi bi-exclamation-triangle"></i> Al modificar el préstamo, se regenerará el cronograma de pagos automáticamente.
+            </div>
+            <div class="mb-3">
+                <a href="{{ url_for('prestamos') }}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Cancelar
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-save"></i> Actualizar Préstamo
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% else %}
+<!-- Lista de Préstamos -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-list-ul"></i> Lista de Préstamos</span>
+        <a href="{{ url_for('prestamo_nuevo') }}" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus"></i> Nuevo Préstamo
+        </a>
+    </div>
+    <div class="card-body">
+        <!-- Filtro por Estado -->
+        <form action="{{ url_for('prestamos') }}" method="GET" class="mb-4">
+            <div class="row">
+                <div class="col-md-10">
+                    <select class="form-select" name="estado">
+                        <option value="">Todos los estados</option>
+                        <option value="ACTIVO" {% if estado_filtro == 'ACTIVO' %}selected{% endif %}>Activo</option>
+                        <option value="CANCELADO" {% if estado_filtro == 'CANCELADO' %}selected{% endif %}>Cancelado</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-filter"></i> Filtrar
+                    </button>
+                </div>
+            </div>
+        </form>
+        
+        <!-- Tabla -->
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Cliente</th>
+                        <th>Monto</th>
+                        <th>Tasa Interés</th>
+                        <th>Cuotas</th>
+                        <th>Fecha Desembolso</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if prestamos %}
+                        {% for prestamo in prestamos %}
+                        <tr>
+                            <td>{{ prestamo.id }}</td>
+                            <td>{{ prestamo.cliente.nombre if prestamo.cliente else 'N/A' }} {{ prestamo.cliente.apellido if prestamo.cliente else '' }}</td>
+                            <td>₲ {{ "{:,.0f}".format(prestamo.monto).replace(',', '.') }}</td>
+                            <td>{{ prestamo.tasa_interes }}%</td>
+                            <td>{{ prestamo.cantidad_cuotas }}</td>
+                            <td>{{ prestamo.fecha_desembolso.strftime('%Y-%m-%d') if prestamo.fecha_desembolso else 'N/A' }}</td>
+                            <td>
+                                <span class="badge {% if prestamo.estado == 'ACTIVO' %}bg-success{% else %}bg-danger{% endif %}">
+                                    {{ prestamo.estado }}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('prestamo_detalle', id=prestamo.id) }}" class="btn btn-sm btn-info" title="Ver Cronograma">
+                                    <i class="bi bi-calendar3"></i>
+                                </a>
+                                <a href="{{ url_for('prestamo_editar', id=prestamo.id) }}" class="btn btn-sm btn-warning" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form action="{{ url_for('prestamo_eliminar', id=prestamo.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('¿Está seguro de eliminar este préstamo?');">
+                                    <button type="submit" class="btn btn-sm btn-danger" title="Eliminar">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center">
+                                <p class="text-muted">No hay préstamos registrados</p>
+                                <a href="{{ url_for('prestamo_nuevo') }}" class="btn btn-primary">
+                                    <i class="bi bi-plus"></i> Registrar Primer Préstamo
+                                </a>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function formatearNumero(numero) {
+    return numero.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+
+function calcularCuota() {
+    const montoInput = document.getElementById('monto');
+    const monto = parseFloat(montoInput.value.replace(/\./g, '').replace(/,/g, '')) || 0;
+    const tasaInteres = parseFloat(document.getElementById('tasa_interes').value) || 0;
+    const cantidadCuotas = parseInt(document.getElementById('cantidad_cuotas').value) || 1;
+    
+    if (monto > 0 && cantidadCuotas > 0) {
+        const tasaMensual = tasaInteres / 100 / 12;
+        let cuota;
+        
+        if (tasaMensual === 0) {
+            cuota = monto / cantidadCuotas;
+        } else {
+            cuota = monto * (tasaMensual * Math.pow(1 + tasaMensual, cantidadCuotas)) / (Math.pow(1 + tasaMensual, cantidadCuotas) - 1);
+        }
+        
+        document.getElementById('cuota_calculada').value = '₲ ' + formatearNumero(cuota.toFixed(0));
+    } else {
+        document.getElementById('cuota_calculada').value = '';
+    }
+}
+
+// Formatear monto mientras se escribe
+document.addEventListener('DOMContentLoaded', function() {
+    const montoInput = document.getElementById('monto');
+    if (montoInput) {
+        montoInput.addEventListener('input', function(e) {
+            let valor = e.target.value.replace(/\./g, '').replace(/,/g, '');
+            if (valor && !isNaN(valor)) {
+                e.target.value = formatearNumero(valor);
+            }
+            calcularCuota();
+        });
+    }
+    
+    calcularCuota();
+});
+</script>
+{% endblock %}

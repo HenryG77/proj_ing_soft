@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block title %}Gestión de Clientes - Sistema de Gestión de Préstamos{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="bi bi-people"></i> Gestión de Clientes</h1>
+    <p class="text-muted">Administrar clientes del sistema</p>
+</div>
+
+{% if modo == 'crear' %}
+<!-- Formulario de Nuevo Cliente -->
+<div class="card">
+    <div class="card-header">
+        <i class="bi bi-person-plus"></i> Registrar Nuevo Cliente
+    </div>
+    <div class="card-body">
+        <form action="{{ url_for('cliente_nuevo') }}" method="POST">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="nombre" class="form-label">Nombre *</label>
+                        <input type="text" class="form-control" id="nombre" name="nombre" required>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="apellido" class="form-label">Apellido *</label>
+                        <input type="text" class="form-control" id="apellido" name="apellido" required>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="documento" class="form-label">Documento *</label>
+                        <input type="text" class="form-control" id="documento" name="documento" required>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="telefono" class="form-label">Teléfono</label>
+                        <input type="text" class="form-control" id="telefono" name="telefono">
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="correo" class="form-label">Correo Electrónico</label>
+                        <input type="email" class="form-control" id="correo" name="correo">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="direccion" class="form-label">Dirección</label>
+                        <input type="text" class="form-control" id="direccion" name="direccion">
+                    </div>
+                </div>
+            </div>
+            <div class="mb-3">
+                <a href="{{ url_for('clientes') }}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Cancelar
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-save"></i> Guardar Cliente
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% elif modo == 'editar' %}
+<!-- Formulario de Editar Cliente -->
+<div class="card">
+    <div class="card-header">
+        <i class="bi bi-person-gear"></i> Editar Cliente
+    </div>
+    <div class="card-body">
+        <form action="{{ url_for('cliente_editar', id=cliente.id) }}" method="POST">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="nombre" class="form-label">Nombre *</label>
+                        <input type="text" class="form-control" id="nombre" name="nombre" value="{{ cliente.nombre }}" required>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="apellido" class="form-label">Apellido *</label>
+                        <input type="text" class="form-control" id="apellido" name="apellido" value="{{ cliente.apellido }}" required>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="documento" class="form-label">Documento *</label>
+                        <input type="text" class="form-control" id="documento" name="documento" value="{{ cliente.documento }}" required>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="telefono" class="form-label">Teléfono</label>
+                        <input type="text" class="form-control" id="telefono" name="telefono" value="{{ cliente.telefono }}">
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="correo" class="form-label">Correo Electrónico</label>
+                        <input type="email" class="form-control" id="correo" name="correo" value="{{ cliente.correo }}">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="direccion" class="form-label">Dirección</label>
+                        <input type="text" class="form-control" id="direccion" name="direccion" value="{{ cliente.direccion }}">
+                    </div>
+                </div>
+            </div>
+            <div class="mb-3">
+                <a href="{{ url_for('clientes') }}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Cancelar
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-save"></i> Actualizar Cliente
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% else %}
+<!-- Lista de Clientes -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-list-ul"></i> Lista de Clientes</span>
+        <a href="{{ url_for('cliente_nuevo') }}" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus"></i> Nuevo Cliente
+        </a>
+    </div>
+    <div class="card-body">
+        <!-- Buscador -->
+        <form action="{{ url_for('clientes') }}" method="GET" class="mb-4">
+            <div class="row">
+                <div class="col-md-10">
+                    <input type="text" class="form-control" name="busqueda" placeholder="Buscar por nombre, apellido o documento..." value="{{ busqueda }}">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i> Buscar
+                    </button>
+                </div>
+            </div>
+        </form>
+        
+        <!-- Tabla -->
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Apellido</th>
+                        <th>Documento</th>
+                        <th>Teléfono</th>
+                        <th>Correo</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if clientes %}
+                        {% for cliente in clientes %}
+                        <tr>
+                            <td>{{ cliente.id }}</td>
+                            <td>{{ cliente.nombre }}</td>
+                            <td>{{ cliente.apellido }}</td>
+                            <td>{{ cliente.documento }}</td>
+                            <td>{{ cliente.telefono or '-' }}</td>
+                            <td>{{ cliente.correo or '-' }}</td>
+                            <td>
+                                <a href="{{ url_for('cliente_editar', id=cliente.id) }}" class="btn btn-sm btn-warning">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form action="{{ url_for('cliente_eliminar', id=cliente.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('¿Está seguro de eliminar este cliente?');">
+                                    <button type="submit" class="btn btn-sm btn-danger">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center">
+                                <p class="text-muted">No hay clientes registrados</p>
+                                <a href="{{ url_for('cliente_nuevo') }}" class="btn btn-primary">
+                                    <i class="bi bi-plus"></i> Registrar Primer Cliente
+                                </a>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

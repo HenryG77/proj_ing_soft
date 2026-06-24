@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Sistema de Gestión de Préstamos{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="bi bi-speedometer2"></i> Dashboard</h1>
+    <p class="text-muted">Resumen general del sistema</p>
+</div>
+
+<!-- Stat Cards -->
+<div class="row">
+    <div class="col-md-3">
+        <div class="stat-card primary">
+            <h3>{{ total_clientes }}</h3>
+            <p><i class="bi bi-people"></i> Total Clientes</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card success">
+            <h3>{{ total_prestamos }}</h3>
+            <p><i class="bi bi-cash-coin"></i> Total Préstamos</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card warning">
+            <h3>₲ {{ "{:,.0f}".format(capital_prestado).replace(',', '.') }}</h3>
+            <p><i class="bi bi-currency-dollar"></i> Capital Prestado</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card info">
+            <h3>₲ {{ "{:,.0f}".format(intereses_generados).replace(',', '.') }}</h3>
+            <p><i class="bi bi-graph-up-arrow"></i> Intereses Generados</p>
+        </div>
+    </div>
+</div>
+
+<!-- Charts -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-pie-chart"></i> Estado de Préstamos
+            </div>
+            <div class="card-body">
+                <canvas id="estadoChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-bar-chart"></i> Préstamos por Mes
+            </div>
+            <div class="card-body">
+                <canvas id="mesesChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Active Loans Table -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-list-check"></i> Préstamos Activos: {{ prestamos_activos }}
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> Hay {{ prestamos_activos }} préstamos activos en el sistema.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Chart de Estado de Préstamos
+const estadoCtx = document.getElementById('estadoChart').getContext('2d');
+const estadoData = {
+    labels: {% if prestamos_por_estado %}{{ prestamos_por_estado | map(attribute='0') | list | tojson }}{% else %}[]{% endif %},
+    datasets: [{
+        label: 'Cantidad de Préstamos',
+        data: {% if prestamos_por_estado %}{{ prestamos_por_estado | map(attribute='1') | list | tojson }}{% else %}[]{% endif %},
+        backgroundColor: [
+            'rgba(102, 126, 234, 0.8)',
+            'rgba(17, 153, 142, 0.8)',
+            'rgba(240, 147, 251, 0.8)',
+            'rgba(79, 172, 254, 0.8)'
+        ],
+        borderColor: [
+            'rgba(102, 126, 234, 1)',
+            'rgba(17, 153, 142, 1)',
+            'rgba(240, 147, 251, 1)',
+            'rgba(79, 172, 254, 1)'
+        ],
+        borderWidth: 1
+    }]
+};
+
+new Chart(estadoCtx, {
+    type: 'doughnut',
+    data: estadoData,
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+// Chart de Préstamos por Mes
+const mesesCtx = document.getElementById('mesesChart').getContext('2d');
+const mesesRaw = {% if prestamos_por_mes %}{{ prestamos_por_mes | tojson }}{% else %}[]{% endif %};
+const mesesLabels = mesesRaw.map(item => `${item[0]}/${item[1]}`);
+const mesesData = {
+    labels: mesesLabels,
+    datasets: [{
+        label: 'Capital Prestado (₲)',
+        data: mesesRaw.map(item => item[3]),
+        backgroundColor: 'rgba(102, 126, 234, 0.8)',
+        borderColor: 'rgba(102, 126, 234, 1)',
+        borderWidth: 1
+    }]
+};
+
+new Chart(mesesCtx, {
+    type: 'bar',
+    data: mesesData,
+    options: {
+        responsive: true,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        },
+        plugins: {
+            legend: {
+                display: false
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

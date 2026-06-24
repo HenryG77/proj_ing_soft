@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Consultas - Sistema de Gestión de Préstamos{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="bi bi-search"></i> Consultas y Extractos</h1>
+    <p class="text-muted">Buscar préstamos por cliente y estado</p>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <i class="bi bi-filter"></i> Filtros de Búsqueda
+    </div>
+    <div class="card-body">
+        <form action="{{ url_for('consultas') }}" method="GET">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="cliente_id" class="form-label">Cliente</label>
+                        <select class="form-select" id="cliente_id" name="cliente_id">
+                            <option value="">Todos los clientes</option>
+                            {% for cliente in clientes %}
+                            <option value="{{ cliente.id }}" {% if cliente_id == cliente.id|string %}selected{% endif %}>
+                                {{ cliente.nombre }} {{ cliente.apellido }} - {{ cliente.documento }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="estado" class="form-label">Estado</label>
+                        <select class="form-select" id="estado" name="estado">
+                            <option value="">Todos los estados</option>
+                            <option value="ACTIVO" {% if estado_filtro == 'ACTIVO' %}selected{% endif %}>Activo</option>
+                            <option value="CANCELADO" {% if estado_filtro == 'CANCELADO' %}selected{% endif %}>Cancelado</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="mb-3">
+                        <label class="form-label">&nbsp;</label>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-search"></i> Buscar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header">
+        <i class="bi bi-table"></i> Resultados de la Consulta
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Cliente</th>
+                        <th>Documento</th>
+                        <th>Monto</th>
+                        <th>Tasa Interés</th>
+                        <th>Cuotas</th>
+                        <th>Fecha Desembolso</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if prestamos %}
+                        {% for prestamo in prestamos %}
+                        <tr>
+                            <td>{{ prestamo.id }}</td>
+                            <td>{{ prestamo.cliente.nombre if prestamo.cliente else 'N/A' }} {{ prestamo.cliente.apellido if prestamo.cliente else '' }}</td>
+                            <td>{{ prestamo.cliente.documento if prestamo.cliente else 'N/A' }}</td>
+                            <td>₲ {{ "{:,.0f}".format(prestamo.monto).replace(',', '.') }}</td>
+                            <td>{{ prestamo.tasa_interes }}%</td>
+                            <td>{{ prestamo.cantidad_cuotas }}</td>
+                            <td>{{ prestamo.fecha_desembolso.strftime('%Y-%m-%d') if prestamo.fecha_desembolso else 'N/A' }}</td>
+                            <td>
+                                <span class="badge {% if prestamo.estado == 'ACTIVO' %}bg-success{% else %}bg-danger{% endif %}">
+                                    {{ prestamo.estado }}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('prestamo_detalle', id=prestamo.id) }}" class="btn btn-sm btn-info" title="Ver Cronograma">
+                                    <i class="bi bi-calendar3"></i> Extracto
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="9" class="text-center">
+                                <p class="text-muted">No se encontraron préstamos con los filtros seleccionados</p>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
