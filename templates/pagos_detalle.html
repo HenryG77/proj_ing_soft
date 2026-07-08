@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Pagos del Préstamo #{{ prestamo.id }} - Sistema de Gestión de Préstamos{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="bi bi-wallet2"></i> Pagos del Préstamo #{{ prestamo.id }}</h1>
+    <p class="text-muted">Selecciona la cuota pendiente que deseas pagar.</p>
+</div>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-journal-check"></i> Cuotas Pendientes</span>
+        <a href="{{ url_for('pagos') }}" class="btn btn-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i> Volver a Préstamos
+        </a>
+    </div>
+    <div class="card-body">
+        {% if cuotas_pendientes %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Cuota</th>
+                        <th>Fecha Vencimiento</th>
+                        <th>Monto</th>
+                        <th>Estado</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cuota in cuotas_pendientes %}
+                    <tr>
+                        <td>{{ cuota.numero_cuota }}</td>
+                        <td>{{ cuota.fecha_vencimiento.strftime('%d/%m/%Y') if cuota.fecha_vencimiento else 'N/A' }}</td>
+                        <td>₲ {{ "{:,.0f}".format(cuota.monto_cuota).replace(',', '.') }}</td>
+                        <td>
+                            <span class="badge bg-warning text-dark">{{ cuota.estado }}</span>
+                        </td>
+                        <td>
+                            <form action="{{ url_for('cuota_pagar', id=cuota.id) }}" method="POST" onsubmit="return confirm('¿Desea registrar el pago de esta cuota?');">
+                                <button type="submit" class="btn btn-sm btn-success">
+                                    <i class="bi bi-cash-stack"></i> Pagar
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted">No hay cuotas pendientes para pagar en este préstamo.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

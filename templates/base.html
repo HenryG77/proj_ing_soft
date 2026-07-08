@@ -121,6 +121,9 @@
                         <a class="nav-link {% if request.endpoint == 'reportes' %}active{% endif %}" href="{{ url_for('reportes') }}">
                             <i class="bi bi-file-earmark-text"></i> Reportes
                         </a>
+                        <a class="nav-link {% if request.endpoint == 'pagos' %}active{% endif %}" href="{{ url_for('pagos') }}">
+                            <i class="bi bi-wallet2"></i> Pagos
+                        </a>
                         <a class="nav-link {% if request.endpoint == 'consultas' %}active{% endif %}" href="{{ url_for('consultas') }}">
                             <i class="bi bi-search"></i> Consultas
                         </a>

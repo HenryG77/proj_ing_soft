@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
-{% block title %}Cronograma de Pagos - Sistema de Gestión de Préstamos{% endblock %}
+{% block title %}Plan de Pagos - Sistema de Gestión de Préstamos{% endblock %}
 
 {% block content %}
 <div class="page-header">
-    <h1><i class="bi bi-calendar3"></i> Cronograma de Pagos</h1>
+    <h1><i class="bi bi-calendar3"></i> Plan de Pagos</h1>
     <p class="text-muted">Detalle del préstamo #{{ prestamo.id }}</p>
 </div>
 
@@ -84,24 +84,23 @@
     </div>
 </div>
 
-<!-- Cronograma de Pagos -->
+<!-- Plan de Pagos -->
 <div class="card mt-4">
     <div class="card-header">
-        <i class="bi bi-table"></i> Cronograma de Pagos
+        <i class="bi bi-table"></i> Plan de Pagos
     </div>
     <div class="card-body">
         <div class="table-responsive">
             <table class="table table-hover">
                 <thead>
                     <tr>
-                        <th>#</th>
-                        <th>Fecha Vencimiento</th>
-                        <th>Capital</th>
-                        <th>Interés</th>
-                        <th>Cuota Total</th>
-                        <th>Saldo Restante</th>
-                        <th>Estado</th>
-                        <th>Acciones</th>
+                        <th>Número de cuota</th>
+                        <th>Fecha de vencimiento</th>
+                        <th>Monto de cuota</th>
+                        <th>Estado de cuota</th>
+                        <th>Fecha de pago</th>
+                        <th>Monto pagado</th>
+                        <th>Días de atraso</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -109,45 +108,42 @@
                     <tr {% if cuota.estado == 'PAGADO' %}class="table-success"{% endif %}>
                         <td>{{ cuota.numero_cuota }}</td>
                         <td>{{ cuota.fecha_vencimiento.strftime('%Y-%m-%d') if cuota.fecha_vencimiento else 'N/A' }}</td>
-                        <td>₲ {{ "{:,.0f}".format(cuota.capital).replace(',', '.') }}</td>
-                        <td>₲ {{ "{:,.0f}".format(cuota.interes).replace(',', '.') }}</td>
-                        <td><strong>₲ {{ "{:,.0f}".format(cuota.monto_cuota).replace(',', '.') }}</strong></td>
-                        <td>₲ {{ "{:,.0f}".format(cuota.saldo_restante).replace(',', '.') }}</td>
+                        <td>₲ {{ "{:,.0f}".format(cuota.monto_cuota).replace(',', '.') }}</td>
                         <td>
                             {% if cuota.estado == 'PAGADO' %}
-                                <span class="badge bg-success">
-                                    <i class="bi bi-check"></i> Pagado
-                                </span>
-                                <small class="text-muted d-block">{{ cuota.fecha_pago.strftime('%Y-%m-%d') if cuota.fecha_pago else '' }}</small>
+                                <span class="badge bg-success">Pagado</span>
+                            {% elif cuota.estado == 'PARCIAL' %}
+                                <span class="badge bg-warning">Parcial</span>
+                            {% elif cuota.estado == 'VENCIDO' %}
+                                <span class="badge bg-danger">Vencida</span>
                             {% else %}
-                                <span class="badge bg-warning">
-                                    <i class="bi bi-clock"></i> Pendiente
-                                </span>
+                                <span class="badge bg-warning">Pendiente</span>
                             {% endif %}
                         </td>
-                        <td>
-                            {% if cuota.estado != 'PAGADO' %}
-                                <form action="{{ url_for('cuota_pagar', id=cuota.id) }}" method="POST" onsubmit="return confirm('¿Confirmar pago de esta cuota?');">
-                                    <button type="submit" class="btn btn-sm btn-success">
-                                        <i class="bi bi-cash-coin"></i> Pagar
-                                    </button>
-                                </form>
-                            {% else %}
-                                <button class="btn btn-sm btn-secondary" disabled>
-                                    <i class="bi bi-check-circle"></i> Pagado
-                                </button>
+                        <td>{{ cuota.fecha_pago.strftime('%Y-%m-%d') if cuota.fecha_pago else '-' }}</td>
+                        {% set monto_pagado = (cuota.pagos | map(attribute='monto_pagado') | sum) if cuota.pagos else 0 %}
+                        <td>₲ {{ "{:,.0f}".format(monto_pagado).replace(',', '.') if monto_pagado else '0' }}</td>
+                        {% set dias = 0 %}
+                        {% if cuota.fecha_pago %}
+                            {% set diff = (cuota.fecha_pago - cuota.fecha_vencimiento).days %}
+                            {% set dias = diff if diff > 0 else 0 %}
+                        {% else %}
+                            {% if cuota.fecha_vencimiento and cuota.fecha_vencimiento < hoy %}
+                                {% set dias = (hoy - cuota.fecha_vencimiento).days %}
                             {% endif %}
-                        </td>
+                        {% endif %}
+                        <td>{{ dias if dias > 0 else '-' }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
                 <tfoot>
-                    <tr class="table-primary">
-                        <td colspan="4"><strong>TOTALES</strong></td>
+                    <tr class="table-border-top">
+                        <td colspan="3"><strong>TOTALES</strong></td>
+                        <td><strong>₲ {{ "{:,.0f}".format(cuotas | map(attribute='capital') | sum | float).replace(',', '.') }}</strong></td>
+                        <td><strong>₲ {{ "{:,.0f}".format(cuotas | map(attribute='interes') | sum | float).replace(',', '.') }}</strong></td>
                         <td><strong>₲ {{ "{:,.0f}".format(cuotas | map(attribute='monto_cuota') | sum | float).replace(',', '.') }}</strong></td>
-                        <td>-</td>
-                        <td>-</td>
-                        <td>-</td>
+                        <td><strong>₲ {{ "{:,.0f}".format(cuotas | map(attribute='saldo_restante') | sum | float).replace(',', '.') }}</strong></td>
+                        <td colspan="2"></td>
                     </tr>
                 </tfoot>
             </table>

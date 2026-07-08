@@ -98,7 +98,7 @@
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label for="monto" class="form-label">Monto Solicitado (₲) *</label>
-                        <input type="text" class="form-control" id="monto" name="monto" placeholder="150.000" value="{{ prestamo.monto }}" required>
+                        <input type="text" class="form-control" id="monto" name="monto" placeholder="150.000" value="{{ '{:,.0f}'.format(prestamo.monto).replace(',', '.') }}" required>
                     </div>
                 </div>
             </div>
@@ -244,7 +244,8 @@ function formatearNumero(numero) {
 
 function calcularCuota() {
     const montoInput = document.getElementById('monto');
-    const monto = parseFloat(montoInput.value.replace(/\./g, '').replace(/,/g, '')) || 0;
+    const montoStr = montoInput.value.replace(/\./g, '').replace(/,/g, '.');
+    const monto = parseFloat(montoStr) || 0;
     const tasaInteres = parseFloat(document.getElementById('tasa_interes').value) || 0;
     const cantidadCuotas = parseInt(document.getElementById('cantidad_cuotas').value) || 1;
     
