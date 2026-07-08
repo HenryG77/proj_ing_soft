@@ -1,9 +1,14 @@
 """
 Modelos de la base de datos para el sistema de gestión de préstamos
 """
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
+from calendar import monthrange
 from database import db
-from decimal import Decimal
+from decimal import Decimal, ROUND_DOWN
+
+
+def _round_to_cents(value):
+    return value.quantize(Decimal('0.01'), rounding=ROUND_DOWN)
 
 
 class Cliente(db.Model):
@@ -99,63 +104,111 @@ class Prestamo(db.Model):
         cuota = monto * (tasa_mensual * (1 + tasa_mensual) ** n) / ((1 + tasa_mensual) ** n - 1)
         return round(cuota, 2)
     
+    @staticmethod
+    def _sumar_un_mes(fecha):
+        if not fecha:
+            return None
+
+        year = fecha.year + (fecha.month // 12)
+        month = fecha.month % 12 + 1
+        last_day = monthrange(year, month)[1]
+        day = min(fecha.day, last_day)
+        return date(year, month, day)
+
+    @staticmethod
+    def _calcular_fecha_vencimiento(fecha):
+        if fecha and fecha.weekday() == 6:
+            return fecha + timedelta(days=1)
+        return fecha
+
+    @staticmethod
+    def generar_tabla_amortizacion(monto, tasa_interes, cantidad_cuotas, fecha_desembolso):
+        """
+        Genera una tabla de amortización conservando el ajuste de centavos
+        y aplicándolo de forma acumulada para que la suma cierre exactamente.
+        """
+        monto = Decimal(str(monto))
+        tasa_anual = Decimal(str(tasa_interes))
+        cantidad_cuotas = int(cantidad_cuotas)
+
+        tasa_mensual = tasa_anual / Decimal('100') / Decimal('12')
+        if tasa_mensual == 0:
+            cuota_exacta = monto / Decimal(cantidad_cuotas)
+        else:
+            factor = (Decimal('1') + tasa_mensual) ** cantidad_cuotas
+            cuota_exacta = monto * (tasa_mensual * factor) / (factor - Decimal('1'))
+
+        cuota = _round_to_cents(cuota_exacta)
+        saldo = monto
+        fecha_actual = fecha_desembolso
+        residuo = Decimal('0.00')
+        filas = []
+
+        for i in range(1, cantidad_cuotas + 1):
+            interes = _round_to_cents(saldo * tasa_mensual)
+
+            if i == cantidad_cuotas:
+                capital = saldo
+                cuota_periodo = capital + interes
+                saldo = Decimal('0.00')
+            else:
+                capital_bruto = cuota + residuo - interes
+                capital = _round_to_cents(capital_bruto)
+                residuo = capital_bruto - capital
+                saldo = saldo - capital
+                cuota_periodo = cuota
+
+            if fecha_actual:
+                fecha_vencimiento = Prestamo._calcular_fecha_vencimiento(
+                    Prestamo._sumar_un_mes(fecha_actual)
+                )
+            else:
+                fecha_vencimiento = None
+
+            filas.append({
+                'numero_cuota': i,
+                'fecha_vencimiento': fecha_vencimiento,
+                'capital': capital,
+                'interes': interes,
+                'monto_cuota': cuota_periodo,
+                'saldo_restante': saldo,
+            })
+            fecha_actual = fecha_vencimiento
+
+        return filas
+
     def generar_cronograma(self):
         """
         Genera el cronograma de pagos usando el sistema francés
+        con ajuste acumulado de centavos y fechas hábiles.
         """
-        monto = float(self.monto)
-        tasa_anual = float(self.tasa_interes)
-        n = self.cantidad_cuotas
-        tasa_mensual = tasa_anual / 100 / 12
-        cuota = self.calcular_cuota_mensual()
-        
-        saldo = monto
-        fecha_actual = self.fecha_desembolso
-        
+        filas = self.generar_tabla_amortizacion(
+            self.monto,
+            self.tasa_interes,
+            self.cantidad_cuotas,
+            self.fecha_desembolso,
+        )
+
         # Eliminar cuotas existentes
         Cuota.query.filter_by(prestamo_id=self.id).delete()
-        
-        for i in range(1, n + 1):
-            # Calcular interés del periodo
-            interes = round(saldo * tasa_mensual, 2)
-            
-            # Calcular capital amortizado
-            capital = round(cuota - interes, 2)
-            
-            # Ajustar última cuota
-            if i == n:
-                capital = round(saldo, 2)
-                cuota = round(capital + interes, 2)
-            
-            # Calcular saldo restante
-            saldo = round(saldo - capital, 2)
-            if saldo < 0:
-                saldo = 0
-            
-            # Calcular fecha de vencimiento (sumar un mes)
-            if fecha_actual:
-                # Avanzar al siguiente mes
-                if fecha_actual.month == 12:
-                    fecha_vencimiento = date(fecha_actual.year + 1, 1, fecha_actual.day)
-                else:
-                    fecha_vencimiento = date(fecha_actual.year, fecha_actual.month + 1, fecha_actual.day)
-                fecha_actual = fecha_vencimiento
-            else:
-                fecha_vencimiento = None
-            
-            # Crear cuota
+
+        for fila in filas:
             cuota_obj = Cuota(
                 prestamo_id=self.id,
-                numero_cuota=i,
-                fecha_vencimiento=fecha_vencimiento,
-                capital=capital,
-                interes=interes,
-                monto_cuota=cuota,
-                saldo_restante=saldo,
+                numero_cuota=fila['numero_cuota'],
+                fecha_vencimiento=fila['fecha_vencimiento'],
+                capital=fila['capital'],
+                interes=fila['interes'],
+                monto_cuota=fila['monto_cuota'],
+                saldo_restante=fila['saldo_restante'],
                 estado='PENDIENTE'
             )
             db.session.add(cuota_obj)
-        
+
+        self.cuota_mensual = filas[0]['monto_cuota'] if filas else Decimal('0.00')
+        self.interes_total = sum((fila['interes'] for fila in filas), Decimal('0.00'))
+        self.monto_total = self.monto + self.interes_total
+
         db.session.commit()
 
 
