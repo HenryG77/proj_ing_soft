@@ -88,8 +88,14 @@
                                 </span>
                             </td>
                             <td>
-                                <a href="{{ url_for('prestamo_detalle', id=prestamo.id) }}" class="btn btn-sm btn-info" title="Ver Cronograma">
-                                    <i class="bi bi-calendar3"></i> Extracto
+                                <a href="{{ url_for('prestamo_detalle', id=prestamo.id) }}" class="btn btn-sm btn-info me-1" title="Ver Plan">
+                                    <i class="bi bi-calendar3"></i> Plan
+                                </a>
+                                <a href="{{ url_for('prestamo_extracto', id=prestamo.id) }}" class="btn btn-sm btn-primary me-1" title="Ver Extracto">
+                                    <i class="bi bi-journal-text"></i> Extracto
+                                </a>
+                                <a href="{{ url_for('prestamo_general', id=prestamo.id) }}" class="btn btn-sm btn-secondary" title="Ver General">
+                                    <i class="bi bi-grid-1x2"></i> General
                                 </a>
                             </td>
                         </tr>
