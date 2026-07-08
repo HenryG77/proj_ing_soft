@@ -148,15 +148,20 @@ class Prestamo(db.Model):
             interes = _round_to_cents(saldo * tasa_mensual)
 
             if i == cantidad_cuotas:
-                capital = saldo
+                # En la última cuota, el capital es el saldo restante exacto
+                # más cualquier residuo acumulado por redondeos
+                capital = saldo + residuo
+                capital = _round_to_cents(capital)
                 cuota_periodo = capital + interes
-                saldo = Decimal('0.00')
+                saldo_restante = Decimal('0.00')
             else:
                 capital_bruto = cuota + residuo - interes
                 capital = _round_to_cents(capital_bruto)
                 residuo = capital_bruto - capital
-                saldo = saldo - capital
+                saldo_restante = saldo - capital
                 cuota_periodo = cuota
+                # Actualizar saldo para la siguiente iteración
+                saldo = saldo_restante
 
             if fecha_actual:
                 fecha_vencimiento = Prestamo._calcular_fecha_vencimiento(
@@ -171,7 +176,7 @@ class Prestamo(db.Model):
                 'capital': capital,
                 'interes': interes,
                 'monto_cuota': cuota_periodo,
-                'saldo_restante': saldo,
+                'saldo_restante': saldo_restante,
             })
             fecha_actual = fecha_vencimiento
 

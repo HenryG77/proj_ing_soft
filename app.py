@@ -232,8 +232,22 @@ def prestamo_detalle(id):
     """
     prestamo = Prestamo.query.get_or_404(id)
     cuotas = Cuota.query.filter_by(prestamo_id=id).order_by(Cuota.numero_cuota).all()
+    
+    # Calcular totales con Decimal para precisión
+    total_capital = sum((c.capital for c in cuotas), Decimal('0'))
+    total_interes = sum((c.interes for c in cuotas), Decimal('0'))
+    total_cuotas = sum((c.monto_cuota for c in cuotas), Decimal('0'))
+    saldo_pendiente = sum((c.monto_cuota for c in cuotas if c.estado != 'PAGADO'), Decimal('0'))
+    
     # Pasar la fecha de hoy para calcular días de atraso en la plantilla
-    return render_template('cronograma.html', prestamo=prestamo, cuotas=cuotas, hoy=date.today())
+    return render_template('cronograma.html', 
+                         prestamo=prestamo, 
+                         cuotas=cuotas, 
+                         hoy=date.today(),
+                         total_capital=total_capital,
+                         total_interes=total_interes,
+                         total_cuotas=total_cuotas,
+                         saldo_pendiente=saldo_pendiente)
 
 
 @app.route('/prestamos/<int:id>/general')
@@ -341,7 +355,8 @@ def prestamo_extracto(id):
         # Actualizar saldo real de capital pendiente acumulando capital pagado
         running_paid_capital += pago_plan
 
-        saldo_capital = monto_total - running_paid_capital
+        # Usar saldo_restante de la tabla de amortización para mostrar el saldo según plan
+        saldo_capital = float(cuota.saldo_restante or 0)
 
         # Días: diferencia entre fecha de pago (si existe) o hoy y la fecha de vencimiento
         dias = None

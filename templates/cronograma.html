@@ -78,7 +78,7 @@
     </div>
     <div class="col-md-3">
         <div class="stat-card info">
-            <h3>₲ {{ "{:,.0f}".format(cuotas | rejectattr('estado', 'equalto', 'PAGADO') | map(attribute='monto_cuota') | sum | float).replace(',', '.') }}</h3>
+            <h3>₲ {{ "{:,.0f}".format(saldo_pendiente).replace(',', '.') }}</h3>
             <p><i class="bi bi-cash"></i> Saldo Pendiente</p>
         </div>
     </div>
@@ -139,10 +139,10 @@
                 <tfoot>
                     <tr class="table-border-top">
                         <td colspan="3"><strong>TOTALES</strong></td>
-                        <td><strong>₲ {{ "{:,.0f}".format(cuotas | map(attribute='capital') | sum | float).replace(',', '.') }}</strong></td>
-                        <td><strong>₲ {{ "{:,.0f}".format(cuotas | map(attribute='interes') | sum | float).replace(',', '.') }}</strong></td>
-                        <td><strong>₲ {{ "{:,.0f}".format(cuotas | map(attribute='monto_cuota') | sum | float).replace(',', '.') }}</strong></td>
-                        <td><strong>₲ {{ "{:,.0f}".format(cuotas | map(attribute='saldo_restante') | sum | float).replace(',', '.') }}</strong></td>
+                        <td><strong>₲ {{ "{:,.0f}".format(total_capital).replace(',', '.') }}</strong></td>
+                        <td><strong>₲ {{ "{:,.0f}".format(total_interes).replace(',', '.') }}</strong></td>
+                        <td><strong>₲ {{ "{:,.0f}".format(total_cuotas).replace(',', '.') }}</strong></td>
+                        <td>-</td>
                         <td colspan="2"></td>
                     </tr>
                 </tfoot>
